@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ImageGen - AI Image Generation</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-magic"></i>
+                    <h1>ImageGen</h1>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-secondary" id="historyBtn">
+                        <i class="fas fa-history"></i>
+                        History
+                    </button>
+                    <div class="rate-limit-display" id="rateLimitDisplay">
+                        <i class="fas fa-clock"></i>
+                        <span id="rateLimitText">Loading...</span>
+                    </div>
+                    <button class="btn btn-secondary" id="settingsBtn">
+                        <i class="fas fa-cog"></i>
+                        Settings
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Mode Selector -->
+            <div class="mode-selector">
+                <button class="mode-btn active" data-mode="generate">
+                    <i class="fas fa-plus-circle"></i>
+                    Generate New Image
+                </button>
+                <button class="mode-btn" data-mode="edit">
+                    <i class="fas fa-edit"></i>
+                    Edit Existing Image
+                </button>
+            </div>
+
+            <!-- Content Area -->
+            <div class="content-area">
+                <!-- Left Panel - Input -->
+                <div class="input-panel">
+                    <!-- Generate Mode -->
+                    <div class="mode-content active" id="generateMode">
+                        <div class="input-section">
+                            <label for="promptInput" class="label">
+                                <i class="fas fa-pen"></i>
+                                Describe your image
+                            </label>
+                            <textarea 
+                                id="promptInput" 
+                                class="prompt-input" 
+                                placeholder="A beautiful sunset over mountains with a lake in the foreground..."
+                                rows="4"
+                            ></textarea>
+                        </div>
+
+                        <div class="quick-settings">
+                            <div class="setting-group">
+                                <label class="label">
+                                    <i class="fas fa-expand-arrows-alt"></i>
+                                    Size
+                                </label>
+                                <select id="sizeSelect" class="select">
+                                    <option value="auto">Auto (Recommended)</option>
+                                    <option value="1024x1024">Square (1024×1024)</option>
+                                    <option value="1024x1536">Portrait (1024×1536)</option>
+                                    <option value="1536x1024">Landscape (1536×1024)</option>
+                                </select>
+                            </div>
+
+                            <div class="setting-group">
+                                <label class="label">
+                                    <i class="fas fa-layer-group"></i>
+                                    Background
+                                </label>
+                                <select id="backgroundSelect" class="select">
+                                    <option value="opaque">With Background</option>
+                                    <option value="transparent">Transparent</option>
+                                </select>
+                            </div>
+
+                            <div class="setting-group">
+                                <label class="label">
+                                    <i class="fas fa-gem"></i>
+                                    Quality
+                                </label>
+                                <select id="qualitySelect" class="select">
+                                    <option value="auto">Auto (Recommended)</option>
+                                    <option value="low">Fast (Low)</option>
+                                    <option value="medium">Balanced (Medium)</option>
+                                    <option value="high">Best (High)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary generate-btn" id="generateBtn">
+                            <i class="fas fa-magic"></i>
+                            Generate Image
+                        </button>
+
+                        <!-- Multi-turn editing panel for generate mode -->
+                        <div class="multiturn-panel-left hidden" id="multiturnPanelLeft">
+                            <div class="multiturn-header">
+                                <h4><i class="fas fa-edit"></i> Continue Editing</h4>
+                                <p class="multiturn-description">Make additional changes to your generated image</p>
+                            </div>
+                            <div class="multiturn-input">
+                                <textarea 
+                                    id="multiturnPromptLeft" 
+                                    class="prompt-input" 
+                                    placeholder="Add more details, change colors, modify the background..."
+                                    rows="3"
+                                ></textarea>
+                                <button class="btn btn-primary" id="continueEditBtnLeft">
+                                    <i class="fas fa-arrow-right"></i>
+                                    Continue Editing
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Edit Mode -->
+                    <div class="mode-content" id="editMode">
+                        <div class="input-section">
+                            <label class="label">
+                                <i class="fas fa-image"></i>
+                                Upload Image to Edit
+                            </label>
+                            <div class="file-upload" id="fileUpload">
+                                <input type="file" id="imageInput" accept="image/*" hidden>
+                                <div class="upload-content">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <p>Click to upload or drag & drop</p>
+                                    <span class="file-info">PNG, JPG up to 50MB</span>
+                                </div>
+                            </div>
+                            <img id="uploadPreview" class="upload-preview" style="display: none;">
+                        </div>
+
+                        <div class="input-section">
+                            <label for="editPromptInput" class="label">
+                                <i class="fas fa-edit"></i>
+                                How would you like to edit this image?
+                            </label>
+                            <textarea 
+                                id="editPromptInput" 
+                                class="prompt-input" 
+                                placeholder="Add a rainbow in the sky, change the color to blue, remove the background..."
+                                rows="3"
+                            ></textarea>
+                        </div>
+
+                        <button class="btn btn-primary generate-btn" id="editBtn" disabled>
+                            <i class="fas fa-edit"></i>
+                            Edit Image
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right Panel - Output -->
+                <div class="output-panel">
+                    <div class="output-header">
+                        <h3>Generated Images</h3>
+                        <div class="output-actions">
+                            <button class="btn btn-icon" id="streamToggle" title="Enable streaming">
+                                <i class="fas fa-stream"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="output-content" id="outputContent">
+                        <div class="empty-state">
+                            <i class="fas fa-image"></i>
+                            <h4>Ready to create</h4>
+                            <p>Your generated images will appear here</p>
+                        </div>
+                    </div>
+
+                    <!-- Multi-turn editing panel -->
+                    <div class="multiturn-panel hidden" id="multiturnPanel">
+                        <div class="multiturn-header">
+                            <h4>Continue editing this image</h4>
+                        </div>
+                        <div class="multiturn-input">
+                            <textarea 
+                                id="multiturnPrompt" 
+                                class="prompt-input" 
+                                placeholder="Make further changes to this image..."
+                                rows="2"
+                            ></textarea>
+                            <button class="btn btn-primary btn-sm" id="continueEditBtn">
+                                <i class="fas fa-arrow-right"></i>
+                                Continue Editing
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p>Zoo - Internal Use Only</p>
+            </div>
+        </footer>
+
+        <!-- Settings Modal -->
+        <div class="modal" id="settingsModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Advanced Settings</h3>
+                    <button class="btn btn-icon" id="closeSettings">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="settings-section">
+                        <h4>Output Options</h4>
+                        <div class="setting-row">
+                            <label for="formatSelect">Output Format</label>
+                            <select id="formatSelect" class="select">
+                                <option value="png">PNG (Best quality)</option>
+                                <option value="jpeg">JPEG (Smaller file)</option>
+                                <option value="webp">WebP (Modern format)</option>
+                            </select>
+                        </div>
+                        <div class="setting-row">
+                            <label for="compressionSlider">Compression Level</label>
+                            <div class="slider-container">
+                                <input type="range" id="compressionSlider" min="0" max="100" value="80" class="slider">
+                                <span class="slider-value">80%</span>
+                            </div>
+                        </div>
+                        <div class="setting-row">
+                            <label for="backgroundToggle">Transparent Background</label>
+                            <label class="toggle">
+                                <input type="checkbox" id="backgroundToggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h4>Streaming Options</h4>
+                        <div class="setting-row">
+                            <label for="partialImagesSlider">Partial Images</label>
+                            <div class="slider-container">
+                                <input type="range" id="partialImagesSlider" min="0" max="3" value="2" class="slider">
+                                <span class="slider-value">2</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="resetSettings">Reset to Defaults</button>
+                    <button class="btn btn-primary" id="saveSettings">Save Settings</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Modal -->
+        <div class="modal" id="historyModal">
+            <div class="modal-content large">
+                <div class="modal-header">
+                    <h3>Generation History</h3>
+                    <button class="btn btn-icon" id="closeHistory">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="history-content" id="historyContent">
+                        <div class="empty-state">
+                            <i class="fas fa-history"></i>
+                            <h4>No history yet</h4>
+                            <p>Your generated images will be saved here</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" id="loadingOverlay">
+            <div class="loading-content">
+                <div class="spinner"></div>
+                <p id="loadingText">Generating your image...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
