@@ -167,7 +167,6 @@ class ImageGenApp {
         try {
             const size = document.getElementById('sizeSelect').value;
             const quality = document.getElementById('qualitySelect').value;
-            const background = document.getElementById('backgroundSelect').value;
 
             const requestBody = {
                 model: "gpt-4o-mini",
@@ -176,7 +175,7 @@ class ImageGenApp {
                     type: "image_generation",
                     ...(size !== 'auto' && { size }),
                     ...(quality !== 'auto' && { quality }),
-                    ...(background === 'transparent' && { background: "transparent" }),
+                    ...(this.settings.transparentBackground && { background: "transparent" }),
                     ...(this.settings.outputFormat !== 'png' && { output_format: this.settings.outputFormat }),
                     ...(this.settings.compressionLevel !== 80 && { output_compression: this.settings.compressionLevel }),
                     ...(this.streamingEnabled && { partial_images: this.settings.partialImages })
@@ -240,6 +239,8 @@ class ImageGenApp {
             this.displayImage(imageData);
             this.addToHistory(imageData);
             this.showMultiturnPanel();
+            // Update rate limit display after successful generation
+            this.updateRateLimitDisplay();
         } else {
             throw new Error('No image generated in response');
         }
@@ -322,6 +323,8 @@ class ImageGenApp {
             this.displayImage(finalImage, true); // Replace partial images
             this.addToHistory(finalImage);
             this.showMultiturnPanel();
+            // Update rate limit display after successful generation
+            this.updateRateLimitDisplay();
         }
     }
 
@@ -753,12 +756,28 @@ class ImageGenApp {
     addToHistory(imageData) {
         this.history.unshift(imageData);
         
-        // Keep only last 50 images
-        if (this.history.length > 50) {
-            this.history = this.history.slice(0, 50);
+        // Keep only last 5 images to prevent localStorage quota issues
+        if (this.history.length > 5) {
+            this.history = this.history.slice(0, 5);
         }
         
-        localStorage.setItem('imageGenHistory', JSON.stringify(this.history));
+        try {
+            localStorage.setItem('imageGenHistory', JSON.stringify(this.history));
+        } catch (error) {
+            if (error.name === 'QuotaExceededError') {
+                console.warn('localStorage quota exceeded, clearing old history');
+                // Clear history and try again with just the new item
+                this.history = [imageData];
+                try {
+                    localStorage.setItem('imageGenHistory', JSON.stringify(this.history));
+                } catch (secondError) {
+                    console.error('Still cannot save to localStorage, disabling history:', secondError);
+                    this.history = [];
+                }
+            } else {
+                console.error('Error saving to localStorage:', error);
+            }
+        }
         this.updateHistoryDisplay();
     }
 
@@ -913,6 +932,9 @@ class ImageGenApp {
     async updateRateLimitDisplay() {
         try {
             const response = await fetch('/api/rate-limit');
+            if (!response.ok) {
+                throw new Error(`Rate limit API failed: ${response.status}`);
+            }
             const data = await response.json();
             const rateLimit = data.rateLimit;
             
